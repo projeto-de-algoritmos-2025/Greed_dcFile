@@ -50,11 +50,18 @@ void treeTraversal(no *raiz, unordered_map<string, vector<bool>> &mapaCodigos, v
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
 
+    //cout << argc << endl;
+    if (argc < 2) {
+        std::cerr << "Uso: " << argv[0] << " <nome_do_arquivo>\n";
+        return 1;
+    }
+
     // Abrindo arquivo a ser compactado
-    ifstream arquivo("testfile.txt", ios::binary);
+    const string arq = argv[1];
+    ifstream arquivo(arq, ios::binary);
     if (!arquivo.is_open())
     {
         cerr << "Erro ao abrir o arquivo.\n";
@@ -133,6 +140,54 @@ int main()
         }
         cout << endl;
     }
+
+    ofstream output("output_codificado.txt", ios::binary);
+    if (!output.is_open())
+    {
+        cerr << "Erro ao criar arquivo de saída.\n";
+        return 1;
+    }
+
+    for (size_t i = 0; i < texto.size();)
+    {
+        unsigned char c = texto[i];
+        size_t char_len;
+
+        if ((c & 0x80) == 0)
+            char_len = 1;
+        else if ((c & 0xE0) == 0xC0)
+            char_len = 2;
+        else if ((c & 0xF0) == 0xE0)
+            char_len = 3;
+        else if ((c & 0xF8) == 0xF0)
+            char_len = 4;
+        else
+        {
+            cerr << "Caractere inválido durante codificação!\n";
+            break;
+        }
+
+        string caractere = texto.substr(i, char_len);
+
+        
+        if (mapaCodigos.find(caractere) != mapaCodigos.end())
+        {
+            vector<bool> codigoBinario = mapaCodigos[caractere];
+            for (bool bit : codigoBinario)
+            {
+                output << (bit ? '1' : '0');
+            }
+        }
+        else
+        {
+            cerr << "Caractere não encontrado no mapa: " << caractere << "\n";
+        }
+
+        i += char_len;
+    }
+
+    output.close();
+    cout << "\nTexto codificado escrito em 'output_codificado.txt'\n";
 
     return 0;
 }
